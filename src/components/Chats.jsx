@@ -1,15 +1,50 @@
-import React from 'react'
+import { doc, onSnapshot } from 'firebase/firestore'
+import React, { useContext, useEffect, useState } from 'react'
+import { db } from '../config/firebase.config'
+import { AuthContext } from '../contexts/AuthContext'
+import { ChatContext } from '../contexts/ChatContext'
 
 function Chats() {
+  const {currentUser} = useContext(AuthContext)
+  const { state, dispatch } = useContext(ChatContext)
+  const [chats, setChats] = useState([])
+
+  useEffect(()=>{
+      
+    (()=>{
+      if(currentUser.uid){
+      return onSnapshot(doc(db, 'userChat', currentUser.uid), doc=>{
+        setChats(doc.data())
+      })
+    }
+    })()
+
+    
+
+  },[currentUser.uid])
+
+  // console.log(Object.entries(chats));
+
+  const handleSelect = (info)=>{
+    dispatch({type: 'CHANGE_USER', payload: info})
+    // console.log(state);
+  }
+
   return (
     <div className="chats">
-      <div className="userChat">
-        <img src="https://images.ctfassets.net/lh3zuq09vnm2/yBDals8aU8RWtb0xLnPkI/19b391bda8f43e16e64d40b55561e5cd/How_tracking_user_behavior_on_your_website_can_improve_customer_experience.png" alt="" />
-        <div className="userChatInfo">
-          <span>Jene</span>
-          <p>Hello from me</p>
-        </div>
-      </div>
+      { 
+        chats &&
+        Object.entries(chats)?.sort((a,b)=>(b[1].date - a[1].date)).map((chat)=>(
+
+          <div className="userChat" key={chat[0]} onClick={()=>handleSelect(chat[1].userInfo)}>
+            <img src={chat[1].userInfo.photoURL} alt="" />
+            <div className="userChatInfo">
+              <span>{chat[1].userInfo.displayName}</span>
+              <p>{chat[1].lastMessage?.text}</p>
+            </div>
+          </div>
+        ))
+      }
     </div>
   )
 }
